@@ -1,0 +1,94 @@
+import unittest
+from xml.etree import ElementTree as ET
+ 
+def get_keywords_from_file(file_path):
+    keywords = []
+    with open(file_path, 'r') as file:
+        line = file.readline().rstrip()
+        while line:
+            if line and line[0] != "#" and '=' in line and line.split("=")[1][0] == "$":
+                keywords.append(line.split("=")[1][2:-1])
+            line = file.readline().rstrip()
+    return sorted(keywords)
+ 
+def find_differences(file_1_keywords, file_2_keywords):
+    file_1_difference = set(file_2_keywords).difference(file_1_keywords)
+    file_2_difference = set(file_1_keywords).difference(file_2_keywords)
+    return file_1_difference, file_2_difference
+ 
+def append_differences_to_files(file_2_difference, env_file_path, env_file_op_path):
+    with open(env_file_path, 'a') as env_file, open(env_file_op_path, 'w') as env_file_op:
+        for val in file_2_difference:
+            commonxml = ET.parse("cbc-osb-common.xml")
+            namefinderinxml = commonxml.find(".//*[name='"+val+"']")
+            env_file.writelines(namefinderinxml.find('name').text+'='+namefinderinxml.find('value').text + "\n")
+            env_file_op.writelines(namefinderinxml.find('name').text+'='+namefinderinxml.find('value').text + "\n")
+            append_additional_values(env_file, env_file_op, namefinderinxml)
+ 
+def append_additional_values(env_file, env_file_op, namefinderinxml):
+    splitting = namefinderinxml.find('value').text.split("${")
+    if len(splitting) > 1:
+        for index, splitter in enumerate(splitting):
+            if index > 0:
+                devxml = ET.parse("cbc-service-cbc-osb-dev01.xml")
+                namefinderindevxml = devxml.find(".//*[name='"+splitting[index][:-1]+"']")
+                if namefinderindevxml:
+                    env_file.writelines(namefinderindevxml.find('name').text+'='+namefinderindevxml.find('value').text + "\n")
+                    env_file_op.writelines(namefinderindevxml.find('name').text+'='+namefinderindevxml.find('value').text + "\n")
+                sercomxml = ET.parse("cbc-service-cbc-osb-common.xml")
+                namefinderinsercomxml = sercomxml.find(".//*[name='"+splitting[index][:-1]+"']")
+                if namefinderinsercomxml:
+                    env_file.writelines(namefinderinsercomxml.find('name').text+'='+namefinderinsercomxml.find('value').text + "\n")
+                    env_file_op.writelines(namefinderinsercomxml.find('name').text+'='+namefinderinsercomxml.find('value').text + "\n")
+                cbcosbdevxml = ET.parse("cbc-osb-dev01.xml")
+                namefinderincbcosbdevxml = cbcosbdevxml.find(".//*[name='"+splitting[index][:-1]+"']")
+                if namefinderincbcosbdevxml:
+                    env_file.writelines(namefinderincbcosbdevxml.find('name').text+'='+namefinderincbcosbdevxml.find('value').text + "\n")
+                    env_file_op.writelines(namefinderincbcosbdevxml.find('name').text+'='+namefinderincbcosbdevxml.find('value').text + "\n")
+ 
+def write_properties_not_in_env(file_2_difference, output_file_path):
+    with open(output_file_path, mode='wt', encoding='utf-8') as f2d:
+        f2d.write('\n'.join(str(line) for line in file_2_difference))
+ 
+# Example usage
+file_1_keywords = get_keywords_from_file('application.properties')
+file_2_keywords = get_keywords_from_file('environment.properties')
+ 
+file_1_difference, file_2_difference = find_differences(file_1_keywords, file_2_keywords)
+ 
+append_differences_to_files(file_2_difference, 'environment.properties', 'environment_op.properties')
+write_properties_not_in_env(file_2_difference, 'properties-not-in-env.txt')
+ 
+# Now we will add tests
+class TestPropertiesProcessing(unittest.TestCase):
+ 
+    def test_get_keywords_from_file(self):
+        keywords = get_keywords_from_file('test_application.properties')
+        self.assertEqual(keywords, ['keyword1', 'keyword2'])
+ 
+    def test_find_differences(self):
+        file_1_keywords = ['key1', 'key2']
+        file_2_keywords = ['key2', 'key3']
+        file_1_difference, file_2_difference = find_differences(file_1_keywords, file_2_keywords)
+        self.assertEqual(file_1_difference, {'key3'})
+        self.assertEqual(file_2_difference, {'key1'})
+ 
+    def test_append_differences_to_files(self):
+        file_2_difference = {'key3'}
+        append_differences_to_files(file_2_difference, 'test_environment.properties', 'test_environment_op.properties')
+        with open('test_environment.properties', 'r') as env_file:
+            lines = env_file.readlines()
+        self.assertIn('key3=value3\n', lines)
+        with open('test_environment_op.properties', 'r') as env_file_op:
+            lines = env_file_op.readlines()
+        self.assertIn('key3=value3\n', lines)
+ 
+    def test_write_properties_not_in_env(self):
+        file_2_difference = {'key3'}
+        write_properties_not_in_env(file_2_difference, 'test_properties-not-in-env.txt')
+        with open('test_properties-not-in-env.txt', 'r') as f2d:
+            lines = f2d.readlines()
+        self.assertIn('key3\n', lines)
+ 
+if __name__ == '__main__':
+    unittest.main()
