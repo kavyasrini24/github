@@ -13,7 +13,7 @@ file_2_keywords = get_keywords_from_file('environment.properties')
 file_1_difference, file_2_difference = find_differences(file_1_keywords, file_2_keywords)
 
 # Load XML files
-xml_files = load_xml_files('cbc-osb-common.xml', 'cbc-service-cbc-osb-dev01.xml', 'cbc-service-cbc-osb-common.xml', 'cbc-osb-dev01.xml')
+xml_files = load_xml_files('cbc-osb-common.xml', 'cbc-service-cbc-osb-dev01.xml', 'cbc-service-cbc-osb-common.xml', 'cbc-osb-dev01.xml', 'new-file.xml')
 
 # Append differences to files
 append_differences_to_files(file_2_difference, 'environment.properties', 'environment_op.properties', xml_files)
