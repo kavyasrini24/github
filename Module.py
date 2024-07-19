@@ -1,5 +1,3 @@
-# src/module.py
-
 def get_keywords_from_file(file_path):
     keywords = []
     with open(file_path, 'r') as file:
