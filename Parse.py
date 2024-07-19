@@ -18,3 +18,7 @@ def append_additional_values(env_file, env_file_op, namefinderinxml, xml_files):
 
                     env_file.write(f"{namefinderindevxml.find('name').text}={namefinderindevxml.find('value').text}\n")
                     env_file_op.write(f"{namefinderindevxml.find('name').text}={namefinderindevxml.find('value').text}\n")
+
+def write_properties_not_in_env(file_2_difference, output_file_path):
+    with open(output_file_path, mode='wt', encoding='utf-8') as f2d:
+        f2d.write('\n'.join(str(line) for line in file_2_difference))
