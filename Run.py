@@ -1,6 +1,3 @@
-# run.py
-# run.py
-
 from src.config import load_xml_files
 from src.interpreter import append_differences_to_files
 from src.module import get_keywords_from_file, find_differences
