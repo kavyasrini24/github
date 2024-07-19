@@ -1,0 +1,35 @@
+# src/tests/test_properties_processing.py
+
+import unittest
+from src.module import get_keywords_from_file, find_differences
+from src.interpreter import append_differences_to_files
+from src.parser import write_properties_not_in_env
+from src.config import load_xml_files
+
+class TestPropertiesProcessing(unittest.TestCase):
+
+    def test_get_keywords_from_file(self):
+        keywords = get_keywords_from_file('test_application.properties')
+        self.assertEqual(keywords, ['keyword1', 'keyword2'])
+
+    def test_find_differences(self):
+        file_1_keywords = ['key1', 'key2']
+        file_2_keywords = ['key2', 'key3']
+        file_1_difference, file_2_difference = find_differences(file_1_keywords, file_2_keywords)
+        self.assertEqual(file_1_difference, {'key3'})
+        self.assertEqual(file_2_difference, {'key1'})
+
+    def test_append_differences_to_files(self):
+        file_2_difference = {'key3'}
+        xml_files = load_xml_files('cbc-osb-common.xml', 'cbc-service-cbc-osb-dev01.xml', 'cbc-service-cbc-osb-common.xml', 'cbc-osb-dev01.xml')
+        append_differences_to_files(file_2_difference, 'test_environment.properties', 'test_environment_op.properties', xml_files)
+        with open('test_environment.properties', 'r') as env_file:
+            lines = env_file.readlines()
+        self.assertIn('key3=value3\n', lines)
+        with open('test_environment_op.properties', 'r') as env_file_op:
+            lines = env_file_op.readlines()
+        self.assertIn('key3=value3\n', lines)
+
+    def test_write_properties_not_in_env(self):
+        file_2_difference = {'key3'}
+        write_properties_not_in_env(file_2_difference, 'test_properties-not-in
